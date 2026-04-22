@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis - Voice Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #0d1b2a, #1b2838);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e3a5f;
+        }
+        .header h1 { font-size: 1.8rem; color: #00d4ff; letter-spacing: 3px; }
+        .header p  { font-size: 0.85rem; color: #888; }
+        .datetime  { text-align: right; font-size: 0.9rem; color: #00d4ff; }
+
+        /* Layout */
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+
+        /* Cards */
+        .card {
+            background: #0d1b2a;
+            border: 1px solid #1e3a5f;
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        .card h2 { color: #00d4ff; margin-bottom: 1rem; font-size: 1.1rem; letter-spacing: 1px; }
+
+        /* Main assistant card */
+        .main-card { grid-column: 1 / -1; text-align: center; padding: 2rem; }
+
+        /* Orb */
+        .orb-container { margin: 1.5rem auto; width: 150px; height: 150px; position: relative; }
+        .orb {
+            width: 150px; height: 150px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #00d4ff, #0047ab);
+            box-shadow: 0 0 30px #00d4ff55, 0 0 60px #00d4ff22;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem;
+            animation: pulse 3s infinite;
+        }
+        .orb:hover { transform: scale(1.05); box-shadow: 0 0 50px #00d4ff88; }
+        .orb.listening {
+            animation: listening 0.5s infinite alternate;
+            background: radial-gradient(circle at 35% 35%, #ff4444, #aa0000);
+            box-shadow: 0 0 50px #ff444488;
+        }
+        .orb.speaking {
+            animation: speaking 0.3s infinite alternate;
+            background: radial-gradient(circle at 35% 35%, #44ff88, #008844);
+            box-shadow: 0 0 50px #44ff8888;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 30px #00d4ff55, 0 0 60px #00d4ff22; }
+            50%       { box-shadow: 0 0 50px #00d4ff88, 0 0 80px #00d4ff44; }
+        }
+        @keyframes listening {
+            from { transform: scale(1.0); }
+            to   { transform: scale(1.08); }
+        }
+        @keyframes speaking {
+            from { transform: scale(1.0); }
+            to   { transform: scale(1.04); }
+        }
+
+        .orb-label { color: #888; font-size: 0.9rem; margin-top: 0.5rem; }
+
+        /* Text input */
+        .input-row {
+            display: flex; gap: 0.8rem; margin-top: 1.5rem;
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+        .input-row input {
+            flex: 1; padding: 0.8rem 1rem;
+            background: #1b2838; border: 1px solid #1e3a5f;
+            border-radius: 8px; color: #e0e0e0; font-size: 1rem; outline: none;
+        }
+        .input-row input:focus { border-color: #00d4ff; }
+        .btn {
+            padding: 0.8rem 1.5rem; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
+        }
+        .btn-blue  { background: #00d4ff; color: #0a0a1a; }
+        .btn-blue:hover { background: #00b8d9; }
+
+        /* Response box */
+        .response-box {
+            margin-top: 1.5rem;
+            background: #1b2838;
+            border: 1px solid #1e3a5f;
+            border-radius: 12px;
+            padding: 1.2rem;
+            min-height: 60px;
+            text-align: left;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .response-box .label { font-size: 0.75rem; color: #888; margin-bottom: 0.5rem; }
+        .response-box .text  { color: #00d4ff; font-size: 1rem; line-height: 1.6; }
+
+        /* Quick commands */
+        .quick-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; justify-content: center; }
+        .quick-btn {
+            padding: 0.4rem 1rem;
+            background: #1b2838;
+            border: 1px solid #1e3a5f;
+            border-radius: 20px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { border-color: #00d4ff; color: #00d4ff; }
+
+        /* Weather card */
+        .weather-input { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .weather-input input {
+            flex: 1; padding: 0.6rem; background: #1b2838;
+            border: 1px solid #1e3a5f; border-radius: 8px;
+            color: #e0e0e0; outline: none;
+        }
+        .result-text { color: #aaa; font-size: 0.9rem; line-height: 1.6; min-height: 40px; }
+        .result-text.loaded { color: #e0e0e0; }
+
+        /* History */
+        .history-list { max-height: 250px; overflow-y: auto; }
+        .history-item {
+            padding: 0.6rem; border-bottom: 1px solid #1e3a5f;
+            font-size: 0.85rem;
+        }
+        .history-item .you   { color: #888; }
+        .history-item .bot   { color: #00d4ff; margin-top: 0.2rem; }
+
+        /* Reminders */
+        .reminder-list { max-height: 150px; overflow-y: auto; }
+        .reminder-item {
+            padding: 0.5rem; border-left: 3px solid #00d4ff;
+            margin-bottom: 0.5rem; background: #1b2838;
+            border-radius: 0 8px 8px 0; font-size: 0.85rem;
+        }
+
+        /* Status */
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #00ff88; display: inline-block;
+            margin-right: 0.5rem; animation: blink 2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0d1b2a; }
+        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div>
+        <h1>⚡ JARVIS</h1>
+        <p>Voice Activated Personal Assistant | QSkill Internship</p>
+    </div>
+    <div class="datetime" id="live-time">{{ datetime }}</div>
+</div>
+
+<!-- Main Container -->
+<div class="container">
+
+    <!-- Main Assistant Card -->
+    <div class="card main-card">
+        <div><span class="status-dot"></span><small style="color:#888">Assistant Online</small></div>
+
+        <div class="orb-container">
+            <div class="orb" id="orb" onclick="startVoice()">🎤</div>
+        </div>
+        <div class="orb-label" id="orb-label">Click orb to speak or type below</div>
+
+        <div class="input-row">
+            <input type="text" id="text-input" placeholder="Type a command... (e.g. what is the time)" onkeydown="if(event.key==='Enter') sendText()">
+            <button class="btn btn-blue" onclick="sendText()">Send</button>
+        </div>
+
+        <div class="quick-btns">
+            <button class="quick-btn" onclick="quickCmd('what is the time')">⏰ Time</button>
+            <button class="quick-btn" onclick="quickCmd('what is todays date')">📅 Date</button>
+            <button class="quick-btn" onclick="quickCmd('tell me the news')">📰 News</button>
+            <button class="quick-btn" onclick="quickCmd('tell me a joke')">😂 Joke</button>
+            <button class="quick-btn" onclick="quickCmd('who are you')">🤖 About</button>
+            <button class="quick-btn" onclick="quickCmd('open youtube')">▶️ YouTube</button>
+            <button class="quick-btn" onclick="quickCmd('open google')">🔍 Google</button>
+            <button class="quick-btn" onclick="quickCmd('what is python programming')">📚 Wikipedia</button>
+        </div>
+
+        <div class="response-box">
+            <div class="label">🤖 JARVIS says:</div>
+            <div class="text" id="response-text">Hello! I am Jarvis. Click the orb or type a command to get started!</div>
+        </div>
+    </div>
+
+    <!-- Weather Card -->
+    <div class="card">
+        <h2>🌤️ Weather</h2>
+        <div class="weather-input">
+            <input type="text" id="city-input" placeholder="Enter city..." value="Hyderabad">
+            <button class="btn btn-blue" onclick="getWeather()">Get</button>
+        </div>
+        <div class="result-text" id="weather-result">Click Get to check weather...</div>
+    </div>
+
+    <!-- News Card -->
+    <div class="card">
+        <h2>📰 Latest News</h2>
+        <button class="btn btn-blue" onclick="getNews()" style="margin-bottom:1rem; width:100%">🔄 Fetch Headlines</button>
+        <div class="result-text" id="news-result">Click Fetch Headlines to get latest news...</div>
+    </div>
+
+    <!-- Command History -->
+    <div class="card">
+        <h2>📜 Command History</h2>
+        <div class="history-list" id="history-list">
+            <div style="color:#555; font-size:0.85rem;">No commands yet...</div>
+        </div>
+    </div>
+
+    <!-- Reminders -->
+    <div class="card">
+        <h2>⏰ Reminders</h2>
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <input type="text" id="reminder-msg" placeholder="Reminder message..."
+                style="flex:1; padding:0.6rem; background:#1b2838; border:1px solid #1e3a5f; border-radius:8px; color:#e0e0e0; outline:none; min-width:120px;">
+            <input type="number" id="reminder-mins" placeholder="Minutes" value="1" min="1"
+                style="width:80px; padding:0.6rem; background:#1b2838; border:1px solid #1e3a5f; border-radius:8px; color:#e0e0e0; outline:none;">
+            <button class="btn btn-blue" onclick="setReminder()">Set</button>
+        </div>
+        <div class="reminder-list" id="reminder-list">
+            <div style="color:#555; font-size:0.85rem;">No reminders set...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const history = [];
+
+// Live clock
+function updateClock() {
+    const now = new Date();
+    document.getElementById('live-time').textContent =
+        now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})
+        + ' | ' + now.toLocaleTimeString('en-US');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Quick command
+function quickCmd(cmd) {
+    document.getElementById('text-input').value = cmd;
+    sendText();
+}
+
+// Send text command
+async function sendText() {
+    const input = document.getElementById('text-input');
+    const query = input.value.trim();
+    if (!query) return;
+    input.value = '';
+
+    setOrb('speaking', '💬');
+    setResponse('Thinking...');
+
+    try {
+        const res  = await fetch('/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        setResponse(data.response);
+        addHistory(query, data.response);
+    } catch(e) {
+        setResponse('Error connecting to assistant!');
+    } finally {
+        setOrb('idle', '🎤');
+    }
+}
+
+// Voice input using Web Speech API
+function startVoice() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Voice not supported in this browser. Please use Chrome!');
+        return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    setOrb('listening', '👂');
+    document.getElementById('orb-label').textContent = 'Listening... Speak now!';
+
+    recognition.onresult = function(e) {
+        const query = e.results[0][0].transcript;
+        document.getElementById('text-input').value = query;
+        sendText();
+    };
+    recognition.onerror = function() {
+        setOrb('idle', '🎤');
+        document.getElementById('orb-label').textContent = 'Click orb to speak or type below';
+        setResponse('Could not hear you. Please try again.');
+    };
+    recognition.onend = function() {
+        setOrb('idle', '🎤');
+        document.getElementById('orb-label').textContent = 'Click orb to speak or type below';
+    };
+    recognition.start();
+}
+
+function setOrb(state, emoji) {
+    const orb = document.getElementById('orb');
+    orb.className = 'orb ' + (state !== 'idle' ? state : '');
+    orb.textContent = emoji;
+}
+
+function setResponse(text) {
+    document.getElementById('response-text').textContent = text;
+}
+
+function addHistory(query, response) {
+    history.unshift({ query, response });
+    const list = document.getElementById('history-list');
+    list.innerHTML = history.slice(0, 20).map(h => `
+        <div class="history-item">
+            <div class="you">👤 ${h.query}</div>
+            <div class="bot">🤖 ${h.response}</div>
+        </div>
+    `).join('');
+}
+
+// Weather
+async function getWeather() {
+    const city = document.getElementById('city-input').value || 'Hyderabad';
+    document.getElementById('weather-result').textContent = 'Fetching weather...';
+    try {
+        const res  = await fetch('/weather', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city })
+        });
+        const data = await res.json();
+        const el   = document.getElementById('weather-result');
+        el.textContent = data.result;
+        el.className   = 'result-text loaded';
+    } catch(e) {
+        document.getElementById('weather-result').textContent = 'Error fetching weather!';
+    }
+}
+
+// News
+async function getNews() {
+    document.getElementById('news-result').textContent = 'Fetching headlines...';
+    try {
+        const res  = await fetch('/news');
+        const data = await res.json();
+        const el   = document.getElementById('news-result');
+        el.textContent = data.result;
+        el.className   = 'result-text loaded';
+    } catch(e) {
+        document.getElementById('news-result').textContent = 'Error fetching news!';
+    }
+}
+
+// Set reminder
+function setReminder() {
+    const msg  = document.getElementById('reminder-msg').value.trim();
+    const mins = parseInt(document.getElementById('reminder-mins').value) || 1;
+    if (!msg) { alert('Please enter a reminder message!'); return; }
+
+    quickCmd(`remind me to ${msg} in ${mins} minute`);
+
+    setTimeout(async () => {
+        const res  = await fetch('/reminders');
+        const data = await res.json();
+        const list = document.getElementById('reminder-list');
+        if (data.reminders.length === 0) {
+            list.innerHTML = '<div style="color:#555; font-size:0.85rem;">No reminders set...</div>';
+        } else {
+            list.innerHTML = data.reminders.map(r => `
+                <div class="reminder-item">⏰ ${r.message} <span style="color:#888; float:right">${r.time}</span></div>
+            `).join('');
+        }
+        document.getElementById('reminder-msg').value = '';
+    }, 500);
+}
+</script>
+</body>
+</html>
